@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t swappykhot/website:${{ github.sha }} .
+
+    - name: Push Docker image
+      if: github.ref == 'refs/heads/master'
+      run: |
+        docker tag swappykhot/website:${{ github.sha }} swappykhot/website:latest
+        docker push swappykhot/website:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Deploy to server
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@34.204.61.138 << 'EOF'
+        docker login -u swappykhot -p Sw@ppy@99
+        docker pull swappykhot/website:latest
+        docker stop website || true
+        docker rm website || true
+        docker run -d --name website -p 82:80 swappykhot/website:latest
+        EOF
