@@ -53,7 +53,7 @@ jobs:
 
     - name: Deploy to server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.ubuntu }}@${{ secrets.34.204.61.138 }} << 'EOF'
         docker pull your-dockerhub-username/website:latest
         docker stop website || true
         docker rm website || true
